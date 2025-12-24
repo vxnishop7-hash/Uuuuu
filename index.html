@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Particle Text Rebirth</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap');
+
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      flex: 1;
+      width: 90%;
+      background: #111;
+    }
+
+    #textInput {
+      padding: 12px 16px;
+      font-size: 1.2rem;
+      border: none;
+      outline: none;
+      width: 60%;
+      background: #222;
+      border-radius: 8px;
+      color: #fff;
+      font-family: Doto;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <input id="textInput" type="text" value="Hello" placeholder="Type text here..." />
+
+  <script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight * 0.8;
+
+let particles = [];
+let textData = [];
+
+function generateTextData(text) {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.font = "bold 130px Times new roman";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+  const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+  textData = [];
+  for(let y=0; y<canvas.height; y+=6){
+    for(let x=0; x<canvas.width; x+=6){
+      const index = (y*canvas.width + x)*4;
+      if(imageData.data[index+3] > 128){
+        textData.push({x,y});
+      }
+    }
+  }
+}
+
+function createParticlesFromText() {
+  particles = textData.map(p => ({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    homeX: p.x,
+    homeY: p.y,
+    vx: (Math.random()-0.5)*20,
+    vy: (Math.random()-0.5)*20,
+    returning: false
+  }));
+}
+
+function drawParticles() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p => {
+    if(!p.returning){
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.9;
+      p.vy *= 0.9;
+      if(Math.abs(p.vx)<0.1 && Math.abs(p.vy)<0.1){
+        p.returning = true;
+      }
+    } else {
+      p.x += (p.homeX - p.x)*0.05;
+      p.y += (p.homeY - p.y)*0.05;
+    }
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(p.x, p.y, 2, 2);
+  });
+}
+
+function animate() {
+  drawParticles();
+  requestAnimationFrame(animate);
+}
+
+// Initialize
+generateTextData("Hello");
+createParticlesFromText();
+animate();
+
+// Input change handler
+document.getElementById("textInput").addEventListener("input", e => {
+  const newText = e.target.value.trim();
+  if(newText === ""){
+    // void: particles scatter and fade away
+    particles.forEach(p => {
+      p.vx = (Math.random()-0.5)*30;
+      p.vy = (Math.random()-0.5)*30;
+      p.returning = false;
+      p.homeX = Math.random()*canvas.width;
+      p.homeY = Math.random()*canvas.height;
+    });
+    textData = [];
+  } else {
+    generateTextData(newText);
+    createParticlesFromText();
+  }
+});
+  </script>
+</body>
+
+</html>
